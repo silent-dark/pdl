@@ -38,7 +38,7 @@ There are two kinds of fields in above demo: leaf-field &amp; combined-field. Fo
 &nbsp;&nbsp;&nbsp;&nbsp;[ [00000000 00000000 00000000 00000000][ [1][1][01][1010] ]{...}[00000000 00000000 00000000 00000100]{00000001 00000010 00000011 00000100} ] <br/>
 Please compare with the &quot;block-diagram&quot; of above protocol description, you should understand the protocol description just descripted the format of above bit stream, and we can figure out what the meaning of the '{...}' block is by the dependency relationship list. <br/>
 <br/>
-Please make sure you have understood what I said in the above. The thinking of protocol description can not only process the fixed length fields, but also the unfixed length fields, the way is using a function to calculate the size (in bit) by the field's bits, instead of the constant. <br/>
+Please make sure you have understood what I said in the above. The thinking of protocol description can not only process the fixed length fields, but also the unfixed length fields, the way is that define a function to calculate the size (in bit) by the field's bits, instead of the constant. <br/>
 <br/>
 Here is a roadmap about the module: <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;1.0 (DONE) - provided a group of C++ interfaces/classes to descript a binary protocal, you need to derive field descriptors from 'leaf_field_des' or 'combined_field_des' interface/class, and organize your field descriptors as 'field_des_tree' &amp; 'field_des_dependency', and then derive a callback from 'combined_field_des::parse_callback' to handle the 'field_info' items. Please refer the FIELD_DES_UT as an example where in the field_des.cpp file. <br/>
