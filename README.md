@@ -26,7 +26,7 @@ To use this module, you need to know how to descript a binary protocol. At first
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} _b;                                       <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} _adapt; // the actual data type is indicated by _flags field.     <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uint32_t _size;                                                     <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uint8_t _data{1}; // the actual size is indicated by _size field.   <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uint8_t _data[1]; // the actual size is indicated by _size field.   <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;};                                                                                          <br/>
 There are two kinds of fields in above demo: leaf-field &amp; combined-field. For leaf-field, we can descript it with 3 properties: 'name', 'size' (in bit) &amp; 'amount' -- you can add a 'type' property if you like, but 3 properties are enough. For combined-field, as similar, we can descript it with 'name', 'total-size' (in bit) &amp; 'amount' properties. And then, we can descript the ownership with a &quot;block-diagram&quot; which looks like: <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[demo_protocol [_type:32][_flags [_flag1:1][_flag2:1][_flag3:2][_flag4:4]]{_adapt_a ...}{_adapt_b ...}[_size:32]{_data:8}] <br/>
