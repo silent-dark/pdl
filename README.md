@@ -1,6 +1,6 @@
 # pdl
 
-The module is designed as a common library for processing binary protocol, for example, the following is a bit stream which will be processed: <br/>
+The module is designed as a common library for processing binary protocol, for example, here is a bit stream which would be processed: <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;00000000 00000000 00000000 00000000 00000000 00000000 00000000 00110010 00000000 00000000 00000000 01100100 00000000 00000000 00000000 01100100 00000000 00000000 00000000 00010000 <br/>
 Obviously, it is very confused for understanding, but if we convert above bit stream to the following xml format: <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&lt;bm_type size=32 pos=0 value=0/&gt; &lt;bm_width size=32 pos=32 value=50/&gt; &lt;bm_height size=32 pos=64 value=100/&gt; &lt;bm_width_bytes size=32 pos=96 value=100/&gt; &lt;bm_planes size=16 pos=128 value=0/&gt; &lt;bm_bits_pixel size=16 pos=144 value=16/&gt; <br/>
@@ -28,15 +28,15 @@ To use this module, you need to know how to descript a binary protocol. At first
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uint32_t _size;                                                     <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uint8_t _data[1]; // the actual size is indicated by _size field.   <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;};                                                                                          <br/>
-There are two kinds of fields in above demo: leaf-field &amp; combined-field. For leaf-field, we can descript it with 3 properties: 'name', 'size' (in bit) &amp; 'amount' -- you can add a 'type' property if you like, but 3 properties are enough. For combined-field, as similar, we can descript it with 'name', 'total-size' (in bit) &amp; 'amount' properties. And then, we can descript the ownership with a &quot;block-diagram&quot; which looks like: <br/>
+There are two kinds of fields: leaf-field &amp; combined-field. For leaf-field, we can descript it with 3 properties: 'name', 'size' (in bit) &amp; 'count' -- you can add a 'type' property if you like, but 3 properties are enough for discussing the thinking. For combined-field, as similar, we can descript it with 'name', 'total-size' (in bit) &amp; 'count' properties. And then, we can descript the ownership with a &quot;block-diagram&quot; which looks like: <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[demo_protocol [_type:32][_flags [_flag1:1][_flag2:1][_flag3:2][_flag4:4]]{_adapt_a ...}{_adapt_b ...}[_size:32]{_data:8}] <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;Note: [] meams essential field ('amount' property is 1); {} means optional field ('amount' property depends on other fields); the 'size' property is divided with the 'name' property by ':' symbol -- it is omitted if the field is a combined-field. <br/>
- The above diagram didn't tell us the dependency relationship of the optional fields, we can descript it by a pair list: <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Note: [] meams essential field ('count' property is 1); {} means optional field ('count' property depends on other fields); the 'size' property is divided with the 'name' property by ':' symbol -- it is omitted if the field is a combined-field. <br/>
+Above diagram didn't tell us the dependency relationship of the optional fields, we can descript them by a pair list: <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(_flags,_adapt_a) (_flags,_adapt_b) (_size,_data) <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;Note: the first item of each pair is the dependent field of the second item, which means we can calculate the amount of the second item by the value of the dependent field, the formula is AmountOf( ValueOf('dep-field bits') ). <br/>
- To understand above diagram, please think about a bit stream as the following &quot;block-diagram&quot;: <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Note: the first item of each pair is the dependent field of the second item, which means we can calculate the count of the second item by the value of the dependent field, the formula is CountOf( ValueOf('dep-field bits') ). <br/>
+To understand above diagram, please think about a bit stream as the following &quot;block-diagram&quot;: <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[ [00000000 00000000 00000000 00000000][ [1][1][01][1010] ]{...}[00000000 00000000 00000000 00000100]{00000001 00000010 00000011 00000100} ] <br/>
-Please compare with the &quot;block-diagram&quot; of above protocol description, you should understand the protocol description just descripted the format of above bit stream, and we can figure out what the meaning of the '{...}' block is by the dependency relationship list. <br/>
+Please compare with the &quot;block-diagram&quot; of above protocol description, you can see the protocol description just descripted the format of above bit stream, and by the dependency relationship list, we can figure out what the meaning of the '{...}' block is. <br/>
 <br/>
 Please make sure you have understood what I said in the above. The thinking of protocol description can not only process the fixed length fields, but also the unfixed length fields, the way is that define a function to calculate the size (in bit) by the field's bits, instead of the constant. <br/>
 <br/>
