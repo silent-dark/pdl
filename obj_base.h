@@ -186,11 +186,11 @@ public:
     bool operator !() const {
         return !mCtx;
     }
-    operator bool () {
-        return bool(mCtx);
+    operator bool() {
+        return static_cast<bool>(mCtx);
     }
-    operator bool () const {
-        return bool(mCtx);
+    operator bool() const {
+        return static_cast<bool>(mCtx);
     }
     obj_type * operator ->() {
         return objPtr();

@@ -94,6 +94,27 @@ uint32_t bit_ref::copyBits(
     return 0;
 }
 
+bool field_des::IsSubField(
+    const field_des * fieldDes, sub_idx * out_idx) const
+{
+    if (mTreeNode) {
+        uint32_t n = \
+            field_des_tree::node_adapter::GetSubNodeCount(mTreeNode);
+        for (uint32_t i = 0; i < n; ++i) {
+            if ( fieldDes->mTreeNode == \
+                field_des_tree::node_adapter::GetSubNode(mTreeNode, i) )
+            {
+                if (out_idx) {
+                    out_idx->mIndex = i;
+                    out_idx->mCount = n;
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool field_info_generator::findDepFieldInfo(
     const field_des * depFieldDes, field_info_ctx * out_depFieldInfo)
 {
@@ -248,14 +269,15 @@ int combined_field_des::ParseField(
     PDL_THROW( std::invalid_argument(
         "combined_field_des::Parse() invalid argument!"
     ) );
-    int err = EINVAL;
-    return (err < 0)? err: -err;
+    return (EINVAL < 0)? EINVAL: -EINVAL;
 }
 
 #define FIELD_DES_UT
 #ifdef FIELD_DES_UT
 
 #include <iostream>
+#include <fstream>
+#include "field_info_conv.h"
 
 struct BITMAP {
     int32_t bmType;
@@ -359,7 +381,9 @@ bool int_field<T>::EncodeField(bit_ref bitRef, const value_obj * val) const {
             std::cout << \
                 val_itf_selector<int_val>::GetInterface(val)->Val() << \
                 std::endl;
-            return (bool) bitRef.ImportBits( FIELD_SIZE, data, sizeof(T) );
+            return static_cast<bool>(
+                bitRef.ImportBits( FIELD_SIZE, data, sizeof(T) )
+            );
         }
     }
     return false;
@@ -461,7 +485,12 @@ bool bm_bits_field::DecodeField(bit_ref bitRef, value_obj * out_val) const {
         buf_val * bufVal = val_itf_selector<buf_val>::GetInterface(out_val);
         if (bufVal) {
             bufVal->Resize(mFieldSize >> 3);
-            memcpy( bufVal->Buf(), bitRef.Buf()->Buf(), mFieldSize >> 3 );
+            memcpy(
+                bufVal->Buf(),
+                static_cast<uint8_t *>( bitRef.Buf()->Buf() ) + \
+                    (bitRef.Offset() >> 3),
+                mFieldSize >> 3
+            );
             return true;
         }
     }
@@ -474,7 +503,12 @@ bool bm_bits_field::EncodeField(bit_ref bitRef, const value_obj * val) const {
             bitRef.Offset() << "]: <<< ..." << std::endl;
         const buf_val * bufVal = val_itf_selector<buf_val>::GetInterface(val);
         if ( bufVal && bufVal->Buf() ) {
-            memcpy( bitRef.Buf()->Buf(), bufVal->Buf(), mFieldSize >> 3 );
+            memcpy(
+                static_cast<uint8_t *>( bitRef.Buf()->Buf() ) + \
+                    (bitRef.Offset() >> 3),
+                bufVal->Buf(),
+                mFieldSize >> 3 
+            );
             return true;
         }
     }
@@ -563,7 +597,7 @@ int main() {
     bit_ref bitRef(bufVal, 0);
     bitRef.ImportBits( sizeof(bitsBuf) << 3, bitsBuf, sizeof(bitsBuf) );
     uint32_t i = 0;
-    std::cout << "\"" << (char *) bitsBuf << "\":";
+    std::cout << "\"" << reinterpret_cast<char *>(bitsBuf) << "\":";
     do {
         std::cout << ( (i % 8)? "": " " ) << int( bitRef.Val() );
         if ( ++i < bitRef.MaxSize() )
@@ -593,9 +627,26 @@ int main() {
     bmFieldDesDep.Insert(BM_FIELD_DES[6], BM_FIELD_DES[7]);
     field_des_tree fieldDesTree(bmFieldDesNode); // to delete nodes.
     bufVal->Resize( sizeof(BITMAP) * 2 );
+    memset( bufVal->Buf(), 0xff, bufVal->Size() );
     field_info_env biEnv = {&bmFieldDesDep, bufVal};
     bm_parser_callback cb;
     BITMAP_FIELD.ParseField(&cb, biEnv);
+    std::ofstream convFile;
+    convFile.open("field_des_ut.xml");
+    field_info_conv_xml xmlConv(
+        &convFile,
+        FIC_OUTPUT_FIELD_NUMBER | FIC_OUTPUT_MAX_FIELD_NUM
+    );
+    BITMAP_FIELD.ParseField(&xmlConv, biEnv);
+    xmlConv.Flush();
+    convFile.close();
+    convFile.open("field_des_ut.json");
+    field_info_conv_json jsonConv(
+        &convFile,
+        FIC_OUTPUT_MAX_FIELD_NUM
+    );
+    BITMAP_FIELD.ParseField(&jsonConv, biEnv);
+    jsonConv.Flush();
     return 0;
 }
 

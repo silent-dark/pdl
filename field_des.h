@@ -74,7 +74,7 @@ class bit_ref {
         return static_cast<uint8_t *>( mBuf->Buf() )[blockIdx(mOffset)];
     }
     bool getVal() const {
-        return bool( getBlock() & bitMask(mOffset) );
+        return static_cast<bool>( getBlock() & bitMask(mOffset) );
     }
     void setVal(bool bit) {
         if (bit)
@@ -273,6 +273,11 @@ public:
     bool IsLeaf() const {
         return !IsCombined();
     }
+    struct sub_idx {
+        uint32_t mIndex;
+        uint32_t mCount;
+    };
+    bool IsSubField(const field_des * fieldDes, sub_idx * out_idx) const;
 };
 
 class leaf_field_des: public field_des {
