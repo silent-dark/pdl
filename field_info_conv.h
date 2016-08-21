@@ -233,8 +233,7 @@ protected:
         genFieldName(
             ost,
             fieldInfo->FieldDes(),
-            static_cast<bool>(FIC_OUTPUT_FIELD_NUMBER & oflags) \
-                ? fieldInfo->FieldNumber(): 0
+            isOutputFieldNum(oflags)? fieldInfo->FieldNumber(): 0
         );
     }
     static void outputFieldBegin(
@@ -355,7 +354,7 @@ public:
 
 private:
     char mFieldSep;
-    char mValType[4];
+    uint32_t mValType;
 
     static void myOutputFieldBegin(
         std::ostream & ost,

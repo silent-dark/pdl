@@ -554,7 +554,6 @@ bool field_info_conv_traits_json::seekToVal(
 bool field_info_conv_traits_json::findFieldVal(
     std::istream & ist, uint32_t oflags, const field_info * fieldInfo)
 {
-    memset(mValType, 0, 4);
     std::stringstream ssFieldName;
     ssFieldName << "meta-";
     genFieldName(ssFieldName, fieldInfo, oflags);
@@ -563,18 +562,21 @@ bool field_info_conv_traits_json::findFieldVal(
     svElem.Resize( fieldName.length() + 1 );
     char attr[] = "type";
     memset( attr, 0, sizeof(attr) );
+    char type[] = "NUL";
+    memset( type, 0, sizeof(type) );
     return (
         findAttr(
             ist,
             fieldName.c_str(),
             "type",
-            mValType,
+            type,
             4,
             svElem.Str(),
             svElem.Size(),
             attr,
-            sizeof(attr)
-        ) && seekToVal(
+            sizeof(attr) ) &&
+        ( mValType = getTypeId(type) ) &&
+        seekToVal(
             ist,
             fieldName.c_str() + 5, // skip "meta-"
             svElem.Str(),
@@ -598,12 +600,11 @@ bool field_info_conv_traits_json::onParseFieldValue(
     {
         return false;
     }
-    uint32_t typeId = getTypeId(mValType);
     return encFieldVal(
-        typeId,
+        mValType,
         ist,
         "\",\"",
-        (value_obj::BUF_VAL == typeId)? ']': '"',
+        (value_obj::BUF_VAL == mValType)? ']': '"',
         out_buf,
         io_fieldInfo
     );
