@@ -345,7 +345,7 @@ public:
     uint32_t FieldNumber() const {
         return mCtx.mFieldNumber;
     }
-    uint32_t MaxFieldNumber() const {
+    uint32_t MaxFieldNum() const {
         return mCtx.mMaxFieldNum;
     }
     bit_ref RefBits(const buf_val * buf) const {
@@ -358,10 +358,10 @@ public:
         }
         return false;
     }
-    bool EncodeValue(buf_val * buf, const value_obj * val) const {
+    bool EncodeValue(buf_val * out_buf, const value_obj * val) const {
         const leaf_field_des * fieldDes = LeafFieldDes();
         if (fieldDes)
-            return fieldDes->EncodeField( RefBits(buf), val );
+            return fieldDes->EncodeField( RefBits(out_buf), val );
         return false;
     }
 

@@ -149,7 +149,9 @@ public:
         return ( idx < GetSubNodeCount(node) )? &(node->mSubNodes[idx]): 0;
     }
     static node_ptr_c * GetSubNodeAddr(node_ptr_c node, uint32_t idx) {
-        return (node_ptr_c) GetSubNodeAddr( const_cast<node_ptr>(node), idx );
+        return static_cast<node_ptr_c *>(
+            GetSubNodeAddr( const_cast<node_ptr>(node), idx )
+        );
     }
     static node_ptr GetSubNode(node_ptr node, uint32_t idx) {
         node_ptr * nodeAddr = GetSubNodeAddr(node, idx);

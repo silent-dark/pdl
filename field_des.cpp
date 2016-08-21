@@ -314,39 +314,47 @@ public:
     virtual bool EncodeField(bit_ref bitRef, const value_obj * val) const;
 
 private:
-    static void decVal(uint8_t * data, value_obj * out_val, uint16_t *) {
-        val_itf_selector<int_val>::GetInterface(out_val)->Val() = \
-            ( uint32_t(data[0]) << 8 ) | uint32_t(data[1]);
+    static void decVal(const uint8_t * data, value_obj * out_val, bool *) {
+        val_itf_selector<bln_val>::GetInterface(out_val)->Val() = \
+            static_cast<bool>(*data);
     }
-    static bool encVal(
-        const value_obj * val, uint8_t * out_dataBuf, uint16_t *)
-    {
-        const int_val * intVal = val_itf_selector<int_val>::GetInterface(val);
-        if (intVal) {
-            uint32_t data = intVal->Val();
-            out_dataBuf[0] = uint8_t(data >> 8) & 0xff;
-            out_dataBuf[1] = uint8_t(data) & 0xff;
+    static bool encVal(const value_obj * val, uint8_t * out_data, bool *) {
+        const bln_val * blnVal = val_itf_selector<bln_val>::GetInterface(val);
+        if (blnVal) {
+            *out_data = blnVal->Val();
             return true;
         }
         return false;
     }
-    static void decVal(uint8_t * data, value_obj * out_val, uint32_t *) {
+    static void decVal(const uint8_t * data, value_obj * out_val, uint16_t *) {
+        val_itf_selector<int_val>::GetInterface(out_val)->Val() = \
+            ( uint32_t(data[0]) << 8 ) | uint32_t(data[1]);
+    }
+    static bool encVal(const value_obj * val, uint8_t * out_data, uint16_t *) {
+        const int_val * intVal = val_itf_selector<int_val>::GetInterface(val);
+        if (intVal) {
+            uint32_t data = intVal->Val();
+            out_data[0] = uint8_t(data >> 8) & 0xff;
+            out_data[1] = uint8_t(data) & 0xff;
+            return true;
+        }
+        return false;
+    }
+    static void decVal(const uint8_t * data, value_obj * out_val, uint32_t *) {
         val_itf_selector<int_val>::GetInterface(out_val)->Val() = \
             ( uint32_t(data[0]) << 24 ) | \
             ( uint32_t(data[1]) << 16 ) | \
             ( uint32_t(data[2]) << 8 ) | \
             uint32_t(data[3]);
     }
-    static bool encVal(
-        const value_obj * val, uint8_t * out_dataBuf, uint32_t *)
-    {
+    static bool encVal(const value_obj * val, uint8_t * out_data, uint32_t *) {
         const int_val * intVal = val_itf_selector<int_val>::GetInterface(val);
         if (intVal) {
             uint32_t data = intVal->Val();
-            out_dataBuf[0] = uint8_t(data >> 24) & 0xff;
-            out_dataBuf[1] = uint8_t(data >> 16) & 0xff;
-            out_dataBuf[2] = uint8_t(data >> 8) & 0xff;
-            out_dataBuf[3] = uint8_t(data) & 0xff;
+            out_data[0] = uint8_t(data >> 24) & 0xff;
+            out_data[1] = uint8_t(data >> 16) & 0xff;
+            out_data[2] = uint8_t(data >> 8) & 0xff;
+            out_data[3] = uint8_t(data) & 0xff;
             return true;
         }
         return false;
@@ -362,9 +370,14 @@ bool int_field<T>::DecodeField(bit_ref bitRef, value_obj * out_val) const {
         if (  bitRef.ExportBits( FIELD_SIZE, data, sizeof(T) )  ) {
             out_val->Reset();
             decVal( data, out_val, static_cast<T *>(0) );
-            std::cout << \
-                val_itf_selector<int_val>::GetInterface(out_val)->Val() << \
-                std::endl;
+            if ( value_obj::BLN_VAL == out_val->GetValType() ) {
+                std::cout << \
+                    val_itf_selector<bln_val>::GetInterface(out_val)->Val();
+            } else {
+                std::cout << \
+                    val_itf_selector<int_val>::GetInterface(out_val)->Val();
+            }
+            std::cout << std::endl;
             return true;
         }
     }
@@ -378,9 +391,14 @@ bool int_field<T>::EncodeField(bit_ref bitRef, const value_obj * val) const {
             " @" << bitRef.Offset() << "]: <<< ";
         uint8_t data[sizeof(T)];
         if (  encVal( val, data, static_cast<T *>(0) )  ) {
-            std::cout << \
-                val_itf_selector<int_val>::GetInterface(val)->Val() << \
-                std::endl;
+            if ( value_obj::BLN_VAL == val->GetValType() ) {
+                std::cout << \
+                    val_itf_selector<bln_val>::GetInterface(val)->Val();
+            } else {
+                std::cout << \
+                    val_itf_selector<int_val>::GetInterface(val)->Val();
+            }
+            std::cout << std::endl;
             return static_cast<bool>(
                 bitRef.ImportBits( FIELD_SIZE, data, sizeof(T) )
             );
@@ -425,29 +443,16 @@ class bm_bits_pixel_field: public int_field<uint16_t> {
     }
 };
 
-class bm_bits_field: public leaf_field_des {
-    uint32_t mFieldSize;
-
+class bm_bits_field: public int_field<uint16_t> { // for test
 public:
-    bm_bits_field() {
-        mFieldSize = 0;
-    }
     virtual const char * FieldName() const {
         return "bm_bits";
     }
     virtual uint32_t FieldCount(
         bit_ref bitRef,
         const field_info_ctx * depFieldInfo,
-        uint32_t depFieldInfoCount) const;
-    virtual uint32_t FieldSize(
-        bit_ref bitRef,
-        const field_info_ctx * depFieldInfo,
-        uint32_t depFieldInfoCount) const
-    {
-        return mFieldSize;
-    }
-    virtual bool DecodeField(bit_ref bitRef, value_obj * out_val) const;
-    virtual bool EncodeField(bit_ref bitRef, const value_obj * val) const;
+        uint32_t depFieldInfoCount
+    ) const;
 };
 
 uint32_t bm_bits_field::FieldCount(
@@ -455,64 +460,25 @@ uint32_t bm_bits_field::FieldCount(
     const field_info_ctx * depFieldInfo,
     uint32_t depFieldInfoCount) const
 {
-    if ( bitRef.IsValid() && depFieldInfo && 3 == depFieldInfoCount ) {
-        int32_t imgSize[3] = {0};
+    if ( bitRef.IsValid() && depFieldInfo && 2 == depFieldInfoCount ) {
+        uint32_t fieldCount = 1;
+        int32_t imgSize;
         value_obj fieldVal;
-        for (uint32_t i = 0; i < 3; ++i) {
+        for (uint32_t i = 0; i < 2; ++i) {
             static_cast<const leaf_field_des *>(
                 depFieldInfo[i].mFieldDes
             )->DecodeField(
                 bit_ref( bitRef.Buf(), depFieldInfo[i].mFieldOffset ),
                 &fieldVal
             );
-            imgSize[i] = int32_t(
+            imgSize = static_cast<int32_t>(
                 val_itf_selector<int_val>::GetInterface(&fieldVal)->Val()
             );
-            if (imgSize[i] < 0)
-                imgSize[i] = -imgSize[i];
+            fieldCount *= (imgSize < 0)? -imgSize: imgSize;
         }
-        const_cast<bm_bits_field *>(this)->mFieldSize = \
-            imgSize[0] * imgSize[1] * imgSize[2];
+        return fieldCount;
     }
-    return mFieldSize? 1: 0;
-}
-
-bool bm_bits_field::DecodeField(bit_ref bitRef, value_obj * out_val) const {
-    if ( mFieldSize && bitRef.IsValid() && out_val ) {
-        std::cout << "  <<< " << FieldName() << " [" << mFieldSize << " @" << \
-            bitRef.Offset() << "]: ..." << std::endl;
-        out_val->Reset();
-        buf_val * bufVal = val_itf_selector<buf_val>::GetInterface(out_val);
-        if (bufVal) {
-            bufVal->Resize(mFieldSize >> 3);
-            memcpy(
-                bufVal->Buf(),
-                static_cast<uint8_t *>( bitRef.Buf()->Buf() ) + \
-                    (bitRef.Offset() >> 3),
-                mFieldSize >> 3
-            );
-            return true;
-        }
-    }
-    return false;
-}
-
-bool bm_bits_field::EncodeField(bit_ref bitRef, const value_obj * val) const {
-    if ( mFieldSize && bitRef.IsValid() && val ) {
-        std::cout << "  " << FieldName() << " [" << mFieldSize << " @" << \
-            bitRef.Offset() << "]: <<< ..." << std::endl;
-        const buf_val * bufVal = val_itf_selector<buf_val>::GetInterface(val);
-        if ( bufVal && bufVal->Buf() ) {
-            memcpy(
-                static_cast<uint8_t *>( bitRef.Buf()->Buf() ) + \
-                    (bitRef.Offset() >> 3),
-                bufVal->Buf(),
-                mFieldSize >> 3 
-            );
-            return true;
-        }
-    }
-    return false;
+    return 0;
 }
 
 class bitmap_field: public combined_field_des {
@@ -525,14 +491,14 @@ public:
         const field_info_ctx * depFieldInfo,
         uint32_t depFieldInfoCount) const
     {
-        return 2; // For test.
+        return 1;
     }
     virtual uint32_t FieldSize(
         bit_ref bitRef,
         const field_info_ctx * depFieldInfo,
         uint32_t depFieldInfoCount) const
     {
-        return bitRef.MaxSize() / 2; // For test.
+        return bitRef.MaxSize();
     }
 };
 
@@ -607,7 +573,7 @@ int main() {
     } while (1);
     std::cout << std::endl;
 
-    std::cout << "// test combined_field_des." << std::endl;
+    std::cout << "// test field_des." << std::endl;
     field_des_tree::node_ptr bmFieldDesNode = \
         field_des_tree::node_adapter::CreateTreeNode(BM_FIELD_DES[0]);
     BM_FIELD_DES[0]->BindTreeNode(bmFieldDesNode);
@@ -624,29 +590,36 @@ int main() {
     field_des_dependency bmFieldDesDep;
     bmFieldDesDep.Insert(BM_FIELD_DES[2], BM_FIELD_DES[7]);
     bmFieldDesDep.Insert(BM_FIELD_DES[3], BM_FIELD_DES[7]);
-    bmFieldDesDep.Insert(BM_FIELD_DES[6], BM_FIELD_DES[7]);
     field_des_tree fieldDesTree(bmFieldDesNode); // to delete nodes.
-    bufVal->Resize( sizeof(BITMAP) * 2 );
+    bufVal->Resize( sizeof(BITMAP) );
     memset( bufVal->Buf(), 0xff, bufVal->Size() );
     field_info_env biEnv = {&bmFieldDesDep, bufVal};
     bm_parser_callback cb;
     BITMAP_FIELD.ParseField(&cb, biEnv);
-    std::ofstream convFile;
-    convFile.open("field_des_ut.xml");
-    field_info_conv_xml xmlConv(
-        &convFile,
-        FIC_OUTPUT_FIELD_NUMBER | FIC_OUTPUT_MAX_FIELD_NUM
+
+    std::ofstream fileOut;
+    fileOut.open("field_des_ut.xml");
+    field_info_conv_xml convXml(
+        &fileOut,
+        FIC_OUTPUT_FIELD_NUMBER | FIC_OUTPUT_MAX_FIELD_NUM | FIC_OUTPUT_LEAF_FIELD_ONLY
     );
+    BITMAP_FIELD.ParseField(&convXml, biEnv);
+    convXml.Flush();
+    fileOut.close();
+
+    std::ifstream fileIn;
+    fileIn.open("field_des_ut.xml");
+    xml_conv_field_info xmlConv(&fileIn);
     BITMAP_FIELD.ParseField(&xmlConv, biEnv);
-    xmlConv.Flush();
-    convFile.close();
-    convFile.open("field_des_ut.json");
-    field_info_conv_json jsonConv(
-        &convFile,
+    fileIn.close();
+
+    fileOut.open("field_des_ut.json");
+    field_info_conv_json convJson(
+        &fileOut,
         FIC_OUTPUT_MAX_FIELD_NUM
     );
-    BITMAP_FIELD.ParseField(&jsonConv, biEnv);
-    jsonConv.Flush();
+    BITMAP_FIELD.ParseField(&convJson, biEnv);
+    convJson.Flush();
     return 0;
 }
 

@@ -42,10 +42,11 @@ class value_obj: public obj_base {
 public:
     enum val_type {
         NUL_VAL,
-        BOOL_VAL,
+        BLN_VAL,
         INT_VAL,
         INT64_VAL,
         FLT_VAL,
+        FLT64_VAL,
         BUF_VAL,
         STR_VAL,
         WCS_VAL,
@@ -83,15 +84,15 @@ public:
     void Reset();
 };
 
-class bool_val: public val_base {
+class bln_val: public val_base {
     bool mVal;
 
 public:
-    bool_val() {
+    bln_val() {
         mVal = 0;
     }
     virtual const char * TypeName() const {
-        return "bool_val";
+        return "bln_val";
     }
     bool & Val() {
         return mVal;
@@ -151,6 +152,24 @@ public:
         return mVal;
     }
     double Val() const {
+        return mVal;
+    }
+};
+
+class flt64_val: public val_base {
+    long double mVal;
+
+public:
+    flt64_val() {
+        mVal = 0.0;
+    }
+    virtual const char * TypeName() const {
+        return "flt64_val";
+    }
+    long double & Val() {
+        return mVal;
+    }
+    long double Val() const {
         return mVal;
     }
 };
@@ -327,13 +346,13 @@ struct val_itf_selector {
 };
 
 template <>
-struct val_itf_selector<bool_val> {
-    static bool_val * GetInterface(value_obj * valObj) {
+struct val_itf_selector<bln_val> {
+    static bln_val * GetInterface(value_obj * valObj) {
         return val_itf_binder<
-            bool_val,value_obj::BOOL_VAL
+            bln_val,value_obj::BLN_VAL
         >::GetInterface(valObj);
     }
-    static const bool_val * GetInterface(const value_obj * valObj) {
+    static const bln_val * GetInterface(const value_obj * valObj) {
         return GetInterface( const_cast<value_obj *>(valObj) );
     }
 };
@@ -370,6 +389,18 @@ struct val_itf_selector<flt_val> {
         >::GetInterface(valObj);
     }
     static const flt_val * GetInterface(const value_obj * valObj) {
+        return GetInterface( const_cast<value_obj *>(valObj) );
+    }
+};
+
+template <>
+struct val_itf_selector<flt64_val> {
+    static flt64_val * GetInterface(value_obj * valObj) {
+        return val_itf_binder<
+            flt64_val,value_obj::FLT64_VAL
+        >::GetInterface(valObj);
+    }
+    static const flt64_val * GetInterface(const value_obj * valObj) {
         return GetInterface( const_cast<value_obj *>(valObj) );
     }
 };
