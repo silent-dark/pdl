@@ -42,7 +42,7 @@ Please make sure you have understood what I said above. The thinking of protocol
 <br/>
 Here is a roadmap of the module: <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;1.0 (DONE) - provided a group of C++ interfaces/classes to descript a binary protocal, users need to derive field descriptors from 'leaf_field_des' or 'combined_field_des' interface/class, and organize the field descriptors as 'field_des_tree' &amp; 'field_des_dependency', and then derive a callback from 'combined_field_des::parse_callback' to handle the 'field_info' items. Please refer the FIELD_DES_UT as an example where in the field_des.cpp file. <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;1.1 (DONE) - support converting protocol between binary and text format, which means users don't have to implement the 'combined_field_des::parse_callback'. <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;1.1 (DONE) - support converting protocol between binary and text format, which means users don't have to implement the 'combined_field_des::parse_callback'. Please refer the FIELD_DES_UT as an example where in the field_des.cpp file. <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;1.2 (DOING) - support descripting a binary protocal by (text format) Protocol Description Language, which means the module is more friendly to use. <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;1.3 (FUTURE) - porting the module in other languages or frameworks. <br/>
 <br/>
