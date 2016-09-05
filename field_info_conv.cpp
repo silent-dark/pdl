@@ -18,9 +18,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. */
 
-#include <stdlib.h>
-#include <limits>
 #include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
 #include "field_info_conv.h"
 
 using namespace pdl;
@@ -43,9 +43,6 @@ static uint32_t const VALID_OFLAG_MAP[] = {
 };
 static uint32_t const VALID_OFLAG_SIZE = \
     sizeof(VALID_OFLAG) / sizeof(const char *);
-
-static std::streamsize const MAX_IGNORE = \
-    std::numeric_limits<std::streamsize>::max();
 
 uint32_t field_info_conv_traits_base::getTypeId(const char * type) {
     for (uint32_t i = 0; i < VALID_TYPE_SIZE; ++i) {
@@ -265,9 +262,11 @@ bool field_info_conv_traits_base::encFieldVal(
         {
             std::stringbuf sBuf;
             ist.get(sBuf, delim);
+            uint32_t l = sBuf.in_avail();
             str_val * sv = val_itf_selector<str_val>::GetInterface(&valObj);
-            sv->Resize( sBuf.in_avail() + 1 );
-            sBuf.sgetn( sv->Str(), sBuf.in_avail() );
+            sv->Resize(l + 1);
+            sBuf.sgetn( sv->Str(), l );
+            sv->Str()[l] = 0;
         }
         break;
     case value_obj::WCS_VAL: // mbs

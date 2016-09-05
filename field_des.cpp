@@ -620,6 +620,12 @@ int main() {
     );
     BITMAP_FIELD.ParseField(&convJson, biEnv);
     convJson.Flush();
+    fileOut.close();
+
+    fileIn.open("field_des_ut.json");
+    json_conv_field_info jsonConv(&fileIn);
+    BITMAP_FIELD.ParseField(&jsonConv, biEnv);
+    fileIn.close();
     return 0;
 }
 

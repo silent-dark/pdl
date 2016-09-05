@@ -26,10 +26,14 @@ SOFTWARE. */
 #endif
 
 #include <iostream>
+#include <limits>
 #include <errno.h>
 #include "field_des.h"
 
 namespace pdl {
+
+static std::streamsize const MAX_IGNORE = \
+    std::numeric_limits<std::streamsize>::max();
 
 typedef enum {
     FIC_OUTPUT_DEFAULT,

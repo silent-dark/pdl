@@ -101,6 +101,7 @@ private:
 
     map_tree mMapTree;
     key_buf mKeyBuf;
+    uint32_t mValCount;
 
     void pushKeyItem(key_type keyItem);
     void popKeyItem();
@@ -123,6 +124,10 @@ private:
 public:
     void Clear() {
         mMapTree.Clear();
+        mValCount = 0;
+    }
+    uint32_t ValCount() const {
+        return mValCount;
     }
     val_ptr GetValue(const key_type * key) const {
         node_ptr * mapNode = \
@@ -132,10 +137,13 @@ public:
     }
     void Remove(const key_type * key) {
         node_ptr * mapNode = findNode(key, false);
-        if (mapNode && *mapNode)
+        if (mapNode && *mapNode) {
             node_adapter::GetValue(*mapNode)->mVal = val_ptr();
+            --mValCount;
+        }
     }
     val_ptr & operator [](const key_type * key) {
+        ++mValCount;
         return node_adapter::GetValue(* findNode(key, true) )->mVal;
     }
     // refer tree::ForEach for more informations about 'order' parameter.
