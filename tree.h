@@ -31,34 +31,25 @@ SOFTWARE. */
 namespace pdl {
 
 template <typename VT, uint32_t N>
-class tree_node {
-    template <typename NT>
-    friend class tree_node_adapter;
-
+class tree_node_base {
 public:
     typedef VT val_type;
-    typedef tree_node * node_ptr;
-    typedef const tree_node * node_ptr_c;
-    typedef node_ptr sub_node_buf[N];
 
-private:
+protected:
+    typedef tree_node_base * sub_node_buf[N];
+
     val_type mVal;
     sub_node_buf mSubNodes;
 
-    val_type * getValue() {
-        return &mVal;
-    }
-    const val_type * getValue() const {
-        return &mVal;
-    }
-    uint32_t setSubNodeCapacity(uint32_t) {
+public:
+    uint32_t SetSubNodeCapacity(uint32_t) {
         // do nothing.
         return N;
     }
-    uint32_t getSubNodeCount() const {
+    uint32_t GetSubNodeCount() const {
         return N;
     }
-    uint32_t setSubNode(uint32_t idx, node_ptr subNode) {
+    uint32_t SetSubNode(uint32_t idx, tree_node_base * subNode) {
         if (idx < N) {
             mSubNodes[idx] = subNode;
             return idx + 1;
@@ -66,40 +57,34 @@ private:
         return 0;
     }
 };
-
 template <typename VT>
-class tree_node<VT,0> {
-    template <typename NT>
-    friend class tree_node_adapter;
-
+class tree_node_base<VT,0> {
 public:
     typedef VT val_type;
-    typedef tree_node * node_ptr;
-    typedef const tree_node * node_ptr_c;
-    typedef std::vector< node_ptr,std_allocator<val_type> > sub_node_buf;
 
-private:
+protected:
+    typedef std_allocator<tree_node_base *,val_type> node_ptr_allocator;
+    typedef std::vector<tree_node_base *,node_ptr_allocator> sub_node_buf;
+
     val_type mVal;
     sub_node_buf mSubNodes;
 
-    val_type * getValue() {
-        return &mVal;
-    }
-    const val_type * getValue() const {
-        return &mVal;
-    }
-    uint32_t setSubNodeCapacity(uint32_t capSize) {
-        mSubNodes.reserve(capSize);
+public:
+    uint32_t SetSubNodeCapacity(uint32_t capSize) {
+        if (capSize)
+            mSubNodes.reserve(capSize);
         return mSubNodes.capacity();
     }
-    uint32_t getSubNodeCount() const {
+    uint32_t GetSubNodeCount() const {
         return mSubNodes.size();
     }
-    uint32_t setSubNode(uint32_t idx, node_ptr subNode);
+    uint32_t SetSubNode(uint32_t idx, tree_node_base * subNode);
 };
 
 template <typename VT>
-uint32_t tree_node<VT,0>::setSubNode(uint32_t idx, node_ptr subNode) {
+uint32_t tree_node_base<VT,0>::SetSubNode(
+    uint32_t idx, tree_node_base * subNode)
+{
     if ( idx < mSubNodes.size() ) {
         mSubNodes[idx] = subNode;
         return idx + 1;
@@ -110,131 +95,89 @@ uint32_t tree_node<VT,0>::setSubNode(uint32_t idx, node_ptr subNode) {
     return 0;
 }
 
-template <typename NT>
-class tree_node_adapter {
+template <typename VT, uint32_t N = 0>
+class tree_node: public tree_node_base<VT,N> {
 public:
-    typedef NT node_type;
-    typedef typename node_type::val_type val_type;
-    typedef typename node_type::node_ptr node_ptr;
-    typedef typename node_type::node_ptr_c node_ptr_c;
-    typedef typename node_type::sub_node_buf sub_node_buf;
+    typedef tree_node_base<VT,N> my_base;
+    typedef typename my_base::val_type val_type;
+    using my_base::SetSubNodeCapacity;
+    using my_base::GetSubNodeCount;
+    using my_base::SetSubNode;
 
 private:
-    typedef obj_constructor<val_type> val_constructor;
+    using my_base::mVal;
+    using my_base::mSubNodes;
 
 public:
-    static NT * CreateTreeNode();
-    static NT * CreateTreeNode(const val_type & val);
-    static void DestroyTreeNode(node_ptr node);
-
-    static bool IsValidNode(node_ptr_c node) {
-        return node && node->getValue();
-    }
-    static val_type * GetValue(node_ptr node) {
-        return node? node->getValue(): 0;
-    }
-    static const val_type * GetValue(node_ptr_c node) {
-        return node? node->getValue(): 0;
-    }
-    static uint32_t SetSubNodeCapacity(node_ptr node, uint32_t capSize) {
-        return node? node->setSubNodeCapacity(capSize): 0;
-    }
-    static uint32_t GetSubNodeCount(node_ptr_c node) {
-        return node? node->getSubNodeCount(): 0;
-    }
-    static uint32_t SetSubNode(node_ptr node, uint32_t idx, node_ptr subNode) {
-        return (node && subNode)? node->setSubNode(idx, subNode): 0;
-    }
-    static node_ptr * GetSubNodeAddr(node_ptr node, uint32_t idx) {
-        return ( idx < GetSubNodeCount(node) )? &(node->mSubNodes[idx]): 0;
-    }
-    static node_ptr_c * GetSubNodeAddr(node_ptr_c node, uint32_t idx) {
-        return static_cast<node_ptr_c *>(
-            GetSubNodeAddr( const_cast<node_ptr>(node), idx )
-        );
-    }
-    static node_ptr GetSubNode(node_ptr node, uint32_t idx) {
-        node_ptr * nodeAddr = GetSubNodeAddr(node, idx);
-        return nodeAddr? *nodeAddr: 0;
-    }
-    static node_ptr_c GetSubNode(node_ptr_c node, uint32_t idx) {
-        return GetSubNode( const_cast<node_ptr>(node), idx );
+    tree_node() {}
+    tree_node(const val_type & val) {
+        mVal = val;
     }
 
-    static NT * Separate(node_ptr * io_nodeAddr, uint32_t nextNodeIdx);
+    val_type & GetValue() {
+        return mVal;
+    }
+    const val_type & GetValue() const {
+        return mVal;
+    }
+    tree_node ** GetSubNodeAddr(uint32_t idx) {
+        if ( idx < GetSubNodeCount() )
+            return reinterpret_cast<tree_node **>( &(mSubNodes[idx]) );
+        return 0;
+    }
+    tree_node * const * GetSubNodeAddr(uint32_t idx) const {
+        if ( idx < GetSubNodeCount() )
+            return reinterpret_cast<tree_node * const *>( &(mSubNodes[idx]) );
+        return 0;
+    }
+    tree_node * GetSubNode(uint32_t idx) {
+        if ( idx < GetSubNodeCount() )
+            return static_cast<tree_node *>(mSubNodes[idx]);
+        return 0;
+    }
+    const tree_node * GetSubNode(uint32_t idx) const {
+        if ( idx < GetSubNodeCount() )
+            return static_cast<const tree_node *>(mSubNodes[idx]);
+        return 0;
+    }
+    static tree_node * Separate(tree_node ** io_target, uint32_t nextNodeIdx) {
+        tree_node * target = *io_target; // de-ref.
+        if (target) {
+            *io_target = target->GetSubNode(nextNodeIdx); // cover ref-val.
+            target->SetSubNode(nextNodeIdx, 0);
+        }
+        return target;
+    }
     static void Rotate(
-        node_ptr * io_nodeAddr, uint32_t nextNodeIdx, uint32_t destNodeIdx
+        tree_node ** io_target, uint32_t nextNodeIdx, uint32_t destNodeIdx
     );
 };
 
-template <typename NT>
-NT * tree_node_adapter<NT>::CreateTreeNode() {
-    node_type * newNode = static_cast<node_type *>(
-        val_constructor::Allocator()->Allocate( sizeof(node_type) )
-    );
-    return new (newNode) node_type;
-}
-
-template <typename NT>
-NT * tree_node_adapter<NT>::CreateTreeNode(const val_type & val) {
-    node_type * newNode = static_cast<node_type *>(
-        val_constructor::Allocator()->Allocate( sizeof(node_type) )
-    );
-    new ( newNode->getValue() ) val_type(val);
-    new ( &(newNode->mSubNodes) ) sub_node_buf;
-    return newNode;
-}
-
-template <typename NT>
-void tree_node_adapter<NT>::DestroyTreeNode(node_ptr node) {
-    if (node) {
-        node->~node_type();
-        val_constructor::Allocator()->Recycle(node);
-    }
-}
-
-template <typename NT>
-NT * tree_node_adapter<NT>::Separate(
-    node_ptr * io_nodeAddr, uint32_t nextNodeIdx)
+template <typename VT, uint32_t N>
+void tree_node<VT,N>::Rotate(
+    tree_node ** io_target, uint32_t nextNodeIdx, uint32_t destNodeIdx)
 {
-    if ( io_nodeAddr && nextNodeIdx < GetSubNodeCount(*io_nodeAddr) ) {
-        node_ptr origNode = *io_nodeAddr;
-        *io_nodeAddr = origNode->mSubNodes[nextNodeIdx];
-        origNode->mSubNodes[nextNodeIdx] = 0;
-        return origNode;
+    tree_node * target = Separate(io_target, nextNodeIdx);
+    tree_node * nextNode = *io_target; // de-ref.
+    while (nextNode) {
+        io_target = nextNode->GetSubNodeAddr(destNodeIdx); // ref to next.
+        nextNode = *io_target; // de-ref.
     }
-    return 0;
-}
-
-template <typename NT>
-void tree_node_adapter<NT>::Rotate(
-    node_ptr * io_nodeAddr, uint32_t nextNodeIdx, uint32_t destNodeIdx)
-{
-    node_ptr target = Separate(io_nodeAddr, nextNodeIdx);
-    if (target) {
-        if (*io_nodeAddr) {
-            node_ptr destNode = *io_nodeAddr;
-            node_ptr subNode;
-            while (  ( subNode = GetSubNode(destNode, destNodeIdx) )  )
-                destNode = subNode;
-            destNode->setSubNode(destNodeIdx, target);
-        } else
-            *io_nodeAddr = target;
-    }
+    *io_target = target; // cover ref-val.
 }
 
 template <typename NT, typename DT>
 struct tree_stack_item {
-    typedef NT tree_node;
+    typedef NT node_type;
     typedef DT item_data;
-    typedef typename tree_node::node_ptr tree_node_ptr;
+    typedef node_type * node_ptr;
 
     item_data mData;
-    tree_node_ptr mTreeNode;
+    node_ptr mTreeNode;
     uint32_t mNextSubNodeIdx;
     uint32_t mSubNodeCount;
 
-    void Reset(tree_node_ptr treeNode) {
+    void Reset(node_ptr treeNode) {
         new (&mData) item_data;
         mTreeNode = treeNode;
         mNextSubNodeIdx = 0;
@@ -243,14 +186,14 @@ struct tree_stack_item {
 
 template <typename NT>
 struct tree_stack_item<NT,void> {
-    typedef NT tree_node;
-    typedef typename tree_node::node_ptr tree_node_ptr;
+    typedef NT node_type;
+    typedef node_type * node_ptr;
 
-    tree_node_ptr mTreeNode;
+    node_ptr mTreeNode;
     uint32_t mNextSubNodeIdx;
     uint32_t mSubNodeCount;
 
-    void Reset(tree_node_ptr treeNode) {
+    void Reset(node_ptr treeNode) {
         mTreeNode = treeNode;
         mNextSubNodeIdx = 0;
     }
@@ -258,25 +201,27 @@ struct tree_stack_item<NT,void> {
 
 template <typename DT, typename VT = value_obj, uint32_t MAX_SUBNODE_COUNT = 0>
 struct tree_traits {
+    typedef VT val_type;
     typedef tree_node<VT,MAX_SUBNODE_COUNT> node_type;
-    typedef typename node_type::val_type val_type;
-    typedef typename node_type::node_ptr node_ptr;
-    typedef typename node_type::node_ptr_c node_ptr_c;
-    typedef tree_node_adapter<node_type> node_adapter;
+    typedef node_type * node_ptr;
+    typedef const node_type * node_ptr_c;
+    typedef obj_constructor<node_type> node_constructor;
     typedef tree_stack_item<node_type,DT> stack_item;
-    typedef std::vector< stack_item,std_allocator<val_type> > stack_buf;
+    typedef std_allocator<stack_item,val_type> stack_item_allocator;
+    typedef std::vector<stack_item,stack_item_allocator> stack_buf;
 };
 
 template <typename T, uint32_t BUFFER_EXTEND_SIZE = 16>
-class tree: obj_base {
+class tree: public obj_base {
 public:
     typedef T traits_type;
     typedef typename traits_type::val_type val_type;
     typedef typename traits_type::node_type node_type;
     typedef typename traits_type::node_ptr node_ptr;
     typedef typename traits_type::node_ptr_c node_ptr_c;
-    typedef typename traits_type::node_adapter node_adapter;
+    typedef typename traits_type::node_constructor node_constructor;
     typedef typename traits_type::stack_item stack_item;
+    typedef typename traits_type::stack_buf stack_buf;
 
     struct for_each_callback {
         virtual void onPushStack(stack_item * io_stackTop) = 0;
@@ -301,9 +246,28 @@ public:
         return sizeof(tree);
     }
 
-protected:
-    typedef typename traits_type::stack_buf stack_buf;
+    static node_ptr CreateNode() {
+        node_ptr newNode = static_cast<node_ptr>(
+            node_constructor::Allocator()->Allocate( sizeof(node_type) )
+        );
+        new (newNode) node_type();
+        return newNode;
+    }
+    static node_ptr CreateNode(const val_type & val) {
+        node_ptr newNode = static_cast<node_ptr>(
+            node_constructor::Allocator()->Allocate( sizeof(node_type) )
+        );
+        new (newNode) node_type(val);
+        return newNode;
+    }
+    static void DestroyNode(node_ptr node) {
+        if (node) {
+            node->~node_type();
+            node_constructor::Allocator()->Recycle(node);
+        }
+    }
 
+protected:
     struct node_deleter: for_each_callback {
         virtual void onPushStack(stack_item *) {
             // Do nothing.
@@ -312,7 +276,7 @@ protected:
             // Do nothing.
         }
         virtual int onTraversal(stack_item * io_stackTop, int order) {
-            node_adapter::DestroyTreeNode(io_stackTop->mTreeNode);
+            DestroyNode(io_stackTop->mTreeNode);
             return 0;
         }
     };
@@ -389,8 +353,7 @@ int tree<T,BUFFER_EXTEND_SIZE>::ForEach(for_each_callback * cb, int order) {
         uint32_t i;
         stackTop.Reset(mRootNode);
         while (stackTop.mTreeNode) {
-            stackTop.mSubNodeCount = \
-                node_adapter::GetSubNodeCount(stackTop.mTreeNode);
+            stackTop.mSubNodeCount = stackTop.mTreeNode->GetSubNodeCount();
             for (i = stackTop.mNextSubNodeIdx; i < stackTop.mSubNodeCount; ++i)
             {
                 if (i == order) {
@@ -404,7 +367,7 @@ int tree<T,BUFFER_EXTEND_SIZE>::ForEach(for_each_callback * cb, int order) {
                         break;
                     }
                 }
-                subNode = node_adapter::GetSubNode(stackTop.mTreeNode, i);
+                subNode = stackTop.mTreeNode->GetSubNode(i);
                 if (subNode) {
                     stackTop.mNextSubNodeIdx = i + 1;
                     cb->onPushStack(&stackTop);

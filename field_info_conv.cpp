@@ -535,6 +535,7 @@ uint32_t field_info_conv_traits_json::onParseHead(std::istream & ist) {
             return getOFlags(oflags);
         }
     }
+    mCurValType = 0;
     return 0;
 }
 
@@ -551,7 +552,10 @@ bool field_info_conv_traits_json::seekToVal(
 }
 
 bool field_info_conv_traits_json::findFieldVal(
-    std::istream & ist, uint32_t oflags, const field_info * fieldInfo)
+    std::istream & ist,
+    uint32_t oflags,
+    const field_info * fieldInfo,
+    uint32_t * out_valType)
 {
     std::stringstream ssFieldName;
     ssFieldName << "meta-";
@@ -574,7 +578,7 @@ bool field_info_conv_traits_json::findFieldVal(
             svElem.Size(),
             attr,
             sizeof(attr) ) &&
-        ( mValType = getTypeId(type) ) &&
+        ( *out_valType = getTypeId(type) ) &&
         seekToVal(
             ist,
             fieldName.c_str() + 5, // skip "meta-"
@@ -591,7 +595,7 @@ bool field_info_conv_traits_json::onParseFieldValue(
     field_info * io_fieldInfo)
 {
     if ( 1 == io_fieldInfo->FieldNumber() || isOutputFieldNum(oflags) ) {
-        if ( !findFieldVal(ist, oflags, io_fieldInfo) )
+        if ( !findFieldVal(ist, oflags, io_fieldInfo, &mCurValType) )
             return false;
     } else if (
         ist.ignore(MAX_IGNORE, ',').eof() ||
@@ -600,10 +604,10 @@ bool field_info_conv_traits_json::onParseFieldValue(
         return false;
     }
     return encFieldVal(
-        mValType,
+        mCurValType,
         ist,
         "\",\"",
-        (value_obj::BUF_VAL == mValType)? ']': '"',
+        (value_obj::BUF_VAL == mCurValType)? ']': '"',
         out_buf,
         io_fieldInfo
     );

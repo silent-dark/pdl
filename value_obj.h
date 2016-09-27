@@ -244,12 +244,12 @@ public:
     }
 };
 
-template <typename OT>
+template <typename PT>
 class obj_val: public val_base {
 public:
-    typedef OT obj_type;
-    typedef obj_ptr<OT> ptr_type;
-    typedef obj_constructor<OT> constructor_type;
+    typedef PT ptr_type;
+    typedef typename ptr_type::obj_type obj_type;
+    typedef typename ptr_type::constructor_type constructor_type;
 
 private:
     ptr_type mVal;
@@ -257,9 +257,6 @@ private:
 public:
     virtual const char * TypeName() const {
         return mVal? mVal->ContextName(): "obj_val";
-    }
-    void CreateObj(constructor_type * objConstructor, uint32_t objCount = 1) {
-        mVal = ptr_type(objConstructor, objCount);
     }
     obj_type & Obj() {
         return *mVal;
@@ -333,14 +330,14 @@ IT * val_itf_binder<IT,VT>::GetInterface(value_obj * valObj) {
     return itf;
 }
 
-template <typename OT>
+template <typename PT>
 struct val_itf_selector {
-    static obj_val<OT> * GetInterface(value_obj * valObj) {
+    static obj_val<PT> * GetInterface(value_obj * valObj) {
         return val_itf_binder<
-            obj_val<OT>,value_obj::OBJ_VAL
+            obj_val<PT>,value_obj::OBJ_VAL
         >::GetInterface(valObj);
     }
-    static const obj_val<OT> * GetInterface(const value_obj * valObj) {
+    static const obj_val<PT> * GetInterface(const value_obj * valObj) {
         return GetInterface( const_cast<value_obj *>(valObj) );
     }
 };

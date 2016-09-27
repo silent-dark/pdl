@@ -48,7 +48,8 @@ template <typename T, uint32_t BUFFER_EXTEND_SIZE = 16>
 class field_info_conv: public combined_field_des::parse_callback {
     typedef T traits_type;
     typedef typename traits_type::stack_item stack_item;
-    typedef std::vector< stack_item,std_allocator<field_info> > stack_buf;
+    typedef std_allocator<stack_item,field_info> stack_item_allocator;
+    typedef std::vector<stack_item,stack_item_allocator> stack_buf;
 
     std::ostream * mOST;
     uint32_t mOFlags;
@@ -358,7 +359,7 @@ public:
 
 private:
     char mFieldSep;
-    uint32_t mValType;
+    uint32_t mCurValType;
 
     static void myOutputFieldBegin(
         std::ostream & ost,
@@ -406,7 +407,10 @@ private:
         );
     }
     bool findFieldVal(
-        std::istream & ist, uint32_t oflags, const field_info * fieldInfo
+        std::istream & ist,
+        uint32_t oflags,
+        const field_info * fieldInfo,
+        uint32_t * out_valType
     );
 
 public:
@@ -441,7 +445,7 @@ public:
         outputField(ost, oflags, fieldInfo, 0, valObj);
     }
 
-    static uint32_t onParseHead(std::istream & ist);
+    uint32_t onParseHead(std::istream & ist);
     bool onParseFieldValue(
         std::istream & ist,
         uint32_t oflags,

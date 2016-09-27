@@ -98,11 +98,9 @@ bool field_des::IsSubField(
     const field_des * fieldDes, sub_idx * out_idx) const
 {
     if (mTreeNode) {
-        uint32_t n = \
-            field_des_tree::node_adapter::GetSubNodeCount(mTreeNode);
+        uint32_t n = mTreeNode->GetSubNodeCount();
         for (uint32_t i = 0; i < n; ++i) {
-            if ( fieldDes->mTreeNode == \
-                field_des_tree::node_adapter::GetSubNode(mTreeNode, i) )
+            if ( fieldDes->mTreeNode == mTreeNode->GetSubNode(i) )
             {
                 if (out_idx) {
                     out_idx->mIndex = i;
@@ -232,8 +230,7 @@ int combined_field_des::invokeCallback(
     const field_info_env & env,
     field_des_tree::stack_item * io_stackTop)
 {
-    const field_des * fieldDes = \
-        *field_des_tree::node_adapter::GetValue(io_stackTop->mTreeNode);
+    const field_des * fieldDes = io_stackTop->mTreeNode->GetValue();
     field_info_ctx args(
         fieldDes, mParseOffset, io_stackTop->mData.mFieldNumber + 1
     );
@@ -575,17 +572,14 @@ int main() {
 
     std::cout << "// test field_des." << std::endl;
     field_des_tree::node_ptr bmFieldDesNode = \
-        field_des_tree::node_adapter::CreateTreeNode(BM_FIELD_DES[0]);
+        field_des_tree::CreateNode(BM_FIELD_DES[0]);
     BM_FIELD_DES[0]->BindTreeNode(bmFieldDesNode);
-    field_des_tree::node_adapter::SetSubNodeCapacity(bmFieldDesNode, 7);
+    bmFieldDesNode->SetSubNodeCapacity(7);
     field_des_tree::node_ptr subFieldDesNode = 0;
     for (i = 1; i < 8; ++i) {
-        subFieldDesNode = \
-            field_des_tree::node_adapter::CreateTreeNode(BM_FIELD_DES[i]);
+        subFieldDesNode = field_des_tree::CreateNode(BM_FIELD_DES[i]);
         BM_FIELD_DES[i]->BindTreeNode(subFieldDesNode);
-        field_des_tree::node_adapter::SetSubNode(
-            bmFieldDesNode, i - 1, subFieldDesNode
-        );
+        bmFieldDesNode->SetSubNode(i - 1, subFieldDesNode);
     }
     field_des_dependency bmFieldDesDep;
     bmFieldDesDep.Insert(BM_FIELD_DES[2], BM_FIELD_DES[7]);

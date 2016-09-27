@@ -96,14 +96,19 @@ struct obj_constructor<test_obj> {
 }
 
 int main(void) {
+    typedef obj_ptr<test_obj> test_obj_ptr;
+
     obj_constructor<value_obj> valObjConstructor;
     obj_ptr<value_obj> valObj(&valObjConstructor);
-    obj_val<test_obj> * objVal = val_itf_selector<test_obj>::GetInterface(valObj);
-    obj_constructor<test_obj> testObjConstructor;
-    objVal->CreateObj(&testObjConstructor, 2);
+
+    obj_val<test_obj_ptr> * objVal = \
+        val_itf_selector<test_obj_ptr>::GetInterface(valObj);
+    test_obj_ptr::constructor_type testObjConstructor;
+    objVal->ObjPtr() = test_obj_ptr(&testObjConstructor, 2);
     std::cout << "set value as " << valObj->GetTypeName() << ": " << \
-        objVal->ObjPtr()[0].ItemCount() << std::endl;
+        objVal->ObjPtr()->ItemCount() << std::endl;
     valObj->Reset();
+
     str_val * strVal = val_itf_selector<str_val>::GetInterface(valObj);
     std::cout << "change value type as " << valObj->GetTypeName() << std::endl;
     strVal->Resize(10);

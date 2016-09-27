@@ -44,7 +44,7 @@ public:
 
 private:
     typedef std::vector< val_type,std_allocator<val_type> > val_buf;
-    typedef std::vector< uint32_t,std_allocator<val_type> > idx_buf;
+    typedef std::vector< uint32_t,std_allocator<uint32_t,val_type> > idx_buf;
 
     val_buf mValBuf;
     idx_buf mIdxBuf; // Store the sorted indexes of each item in the mValBuf.
@@ -218,8 +218,8 @@ uint32_t table_retriever<T,W>::Retrieve(
     return n;
 }
 
-// The 'table' container is a bidirectional multi-map which supports indicating
-// an A or B value as the key to retrieve a B or A set.
+// The 'table' container is a bidirectional multi-map which can retrieve a A or
+// B set by indicating an B or A value as the key.
 template <typename A, typename B, uint32_t TABLE_WIDTH = 0>
 class table: public obj_base {
     template <typename T, uint32_t W>
@@ -239,7 +239,7 @@ public:
 private:
     typedef index_map<a_type> index_map_a;
     typedef index_map<b_type> index_map_b;
-    typedef std::vector< bool,std_allocator<a_type> > table_buf;
+    typedef std::vector< bool,std_allocator<bool,a_type> > table_buf;
 
     struct find_traits_a {
         typedef typename table::a_type a_type;

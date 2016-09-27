@@ -27,28 +27,27 @@ using namespace pdl;
 #include <iostream>
 
 typedef tree< tree_traits<void,int> > test_tree;
-typedef test_tree::node_adapter test_node_adapter;
 typedef test_tree::node_ptr test_node_ptr;
 typedef test_tree::stack_item test_stack_item;
 
 struct test_tree_callback: test_tree::for_each_callback {
     virtual void onPushStack(test_stack_item * io_stackTop) {
         std::cout << "  >> push {"
-                  << *( test_node_adapter::GetValue(io_stackTop->mTreeNode) )
+                  << io_stackTop->mTreeNode->GetValue()
                   << "}:"
                   << io_stackTop->mNextSubNodeIdx
                   << std::endl;
     }
     virtual void afterPopStack(test_stack_item * io_stackTop) {
         std::cout << "  << pop {"
-                  << *( test_node_adapter::GetValue(io_stackTop->mTreeNode) )
-                  << "}:"
+                  << io_stackTop->mTreeNode->GetValue()
+                  << "}:"a
                   << io_stackTop->mNextSubNodeIdx
                   << std::endl;
     }
     virtual int onTraversal(test_stack_item * io_stackTop, int order) {
         std::cout << "trav {"
-                  << *( test_node_adapter::GetValue(io_stackTop->mTreeNode) )
+                  << io_stackTop->mTreeNode->GetValue()
                   << "}:"
                   << io_stackTop->mNextSubNodeIdx
                   << std::endl;
@@ -57,23 +56,15 @@ struct test_tree_callback: test_tree::for_each_callback {
 };
 
 int main() {
-    test_tree testTree( test_node_adapter::CreateTreeNode(4) );
+    test_tree testTree( test_tree::CreateNode(4) );
     test_node_ptr rootNode = testTree.GetRootNode();
-    test_node_adapter::SetSubNodeCapacity(rootNode, 2);
-    test_node_adapter::SetSubNode(
-        rootNode, 0, test_node_adapter::CreateTreeNode(2)
-    );
-    test_node_adapter::SetSubNode(
-        rootNode, 1, test_node_adapter::CreateTreeNode(5)
-    );
-    rootNode = test_node_adapter::GetSubNode(rootNode, 0);
-    test_node_adapter::SetSubNodeCapacity(rootNode, 2);
-    test_node_adapter::SetSubNode(
-        rootNode, 0, test_node_adapter::CreateTreeNode(1)
-    );
-    test_node_adapter::SetSubNode(
-        rootNode, 1, test_node_adapter::CreateTreeNode(3)
-    );
+    rootNode->SetSubNodeCapacity(2);
+    rootNode->SetSubNode( 0, test_tree::CreateNode(2) );
+    rootNode->SetSubNode( 1, test_tree::CreateNode(5) );
+    rootNode = rootNode->GetSubNode(0);
+    rootNode->SetSubNodeCapacity(2);
+    rootNode->SetSubNode( 0, test_tree::CreateNode(1) );
+    rootNode->SetSubNode( 1, test_tree::CreateNode(3) );
     test_tree_callback cb;
     testTree.ForEach(&cb, 1);
     return 0;

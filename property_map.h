@@ -31,21 +31,19 @@ SOFTWARE. */
 namespace pdl {
 
 template <
-    typename VT = value_obj,
+    typename VT = obj_ptr<value_obj>,
     typename KT = char,
     uint32_t BUFFER_EXTEND_SIZE = 16>
 class property_map: public obj_base {
 public:
     typedef KT key_type;
     typedef VT val_type;
-    typedef obj_constructor<val_type> val_constructor;
-    typedef obj_ptr<val_type> val_ptr;
 
     struct for_each_callback {
         // refer tree::for_each_callback::onTraversal for more informations
         // about 'order' parameter and return value.
         virtual int Callback(
-            const key_type * key, val_ptr & val, int order
+            const key_type * key, val_type & val, int order
         ) = 0;
     };
 
@@ -59,16 +57,15 @@ public:
 private:
     struct key_val_pair {
         key_type mKeyItem;
-        val_ptr mVal;
+        val_type mVal;
     };
     typedef tree_traits<void,key_val_pair,3> map_traits;
     typedef tree<map_traits,BUFFER_EXTEND_SIZE> map_tree;
-    typedef typename map_tree::node_adapter node_adapter;
+    typedef typename map_tree::node_type node_type;
+    typedef typename map_tree::node_ptr node_ptr;
     typedef typename map_tree::stack_item stack_item;
     typedef typename map_tree::for_each_callback for_each_node_callback;
-    typedef typename map_tree::node_type::node_ptr node_ptr;
-
-    typedef std::vector< key_type,std_allocator<val_type> > key_buf;
+    typedef std::vector< key_type,std_allocator<key_type> > key_buf;
 
     class for_each_callback_invoker: public for_each_node_callback {
         property_map * mMap;
@@ -81,11 +78,8 @@ private:
         }
 
         virtual void onPushStack(stack_item * io_stackTop) {
-            if (1 == io_stackTop->mNextSubNodeIdx) {
-                mMap->pushKeyItem(
-                    node_adapter::GetValue(io_stackTop->mTreeNode)->mKeyItem
-                );
-            }
+            if (1 == io_stackTop->mNextSubNodeIdx)
+                mMap->pushKeyItem(io_stackTop->mTreeNode->GetValue().mKeyItem);
         }
         virtual void afterPopStack(stack_item * io_stackTop) {
             if (1 == io_stackTop->mNextSubNodeIdx)
@@ -93,7 +87,7 @@ private:
         }
         virtual int onTraversal(stack_item * io_stackTop, int order) {
             return mMap->invokeCallback(
-                mCb, node_adapter::GetValue(io_stackTop->mTreeNode), order
+                mCb, &( io_stackTop->mTreeNode->GetValue() ), order
             );
         }
     };
@@ -129,22 +123,21 @@ public:
     uint32_t ValCount() const {
         return mValCount;
     }
-    val_ptr GetValue(const key_type * key) const {
+    val_type GetValue(const key_type * key) const {
         node_ptr * mapNode = \
             const_cast<property_map *>(this)->findNode(key, false);
-        return (mapNode && *mapNode) \
-            ? node_adapter::GetValue(*mapNode)->mVal: val_ptr();
+        return (mapNode && *mapNode)? (*mapNode)->GetValue().mVal: val_type();
     }
     void Remove(const key_type * key) {
         node_ptr * mapNode = findNode(key, false);
         if (mapNode && *mapNode) {
-            node_adapter::GetValue(*mapNode)->mVal = val_ptr();
+            (*mapNode)->GetValue().mVal = val_type();
             --mValCount;
         }
     }
-    val_ptr & operator [](const key_type * key) {
+    val_type & operator [](const key_type * key) {
         ++mValCount;
-        return node_adapter::GetValue(* findNode(key, true) )->mVal;
+        return (* findNode(key, true) )->GetValue().mVal;
     }
     // refer tree::ForEach for more informations about 'order' parameter.
     int ForEach(for_each_callback * cb, int order = 0) {
@@ -198,24 +191,24 @@ void * property_map<VT,KT,BUFFER_EXTEND_SIZE>::findNodeWithKeyItem(
     while (curMapNode) {
         if (! *curMapNode) {
             if (autoInsert) {
-                *curMapNode = node_adapter::CreateTreeNode();
-                node_adapter::GetValue(*curMapNode)->mKeyItem = keyItem;
+                *curMapNode = map_tree::CreateNode();
+                (*curMapNode)->GetValue().mKeyItem = keyItem;
             }
             break;
         }
-        if ( keyItem == node_adapter::GetValue(*curMapNode)->mKeyItem )
+        if ( keyItem == (*curMapNode)->GetValue().mKeyItem )
             break;
         prevMapNode = curMapNode;
-        if ( keyItem < node_adapter::GetValue(*curMapNode)->mKeyItem ) {
-            curMapNode = node_adapter::GetSubNodeAddr(*curMapNode, 1);
+        if ( keyItem < (*curMapNode)->GetValue().mKeyItem ) {
+            curMapNode = (*curMapNode)->GetSubNodeAddr(1);
             rotationIdx = 2;
         } else {
-            curMapNode = node_adapter::GetSubNodeAddr(*curMapNode, 2);
+            curMapNode = (*curMapNode)->GetSubNodeAddr(2);
             rotationIdx = 1;
         }
     }
     if (prevMapNode && *curMapNode) {
-        node_adapter::Rotate(prevMapNode, 3 - rotationIdx, rotationIdx);
+        node_type::Rotate(prevMapNode, 3 - rotationIdx, rotationIdx);
         return prevMapNode;
     }
     return curMapNode;
@@ -237,12 +230,12 @@ void * property_map<VT,KT,BUFFER_EXTEND_SIZE>::findNodeWithKey(
         } else {
             if (!autoInsert)
                 break;
-            *curMapNode = node_adapter::CreateTreeNode();
-            node_adapter::GetValue(*curMapNode)->mKeyItem = key[i];
+            *curMapNode = map_tree::CreateNode();
+            (*curMapNode)->GetValue().mKeyItem = key[i];
         }
         if (! *curMapNode)
             break;
-        nextMapNode = node_adapter::GetSubNodeAddr(*curMapNode, 0);
+        nextMapNode = (*curMapNode)->GetSubNodeAddr(0);
         ++i;
     }
     return curMapNode;

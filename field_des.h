@@ -267,8 +267,7 @@ public:
     }
 
     bool IsCombined() const {
-        return mTreeNode && \
-            field_des_tree::node_adapter::GetSubNodeCount(mTreeNode);
+        return mTreeNode && mTreeNode->GetSubNodeCount();
     }
     bool IsLeaf() const {
         return !IsCombined();
@@ -386,7 +385,8 @@ struct obj_constructor<field_info> {
     }
 };
 
-typedef std::list< field_info_ctx,std_allocator<field_info> > \
+typedef std_allocator<field_info_ctx,field_info> field_info_ctx_allocator;
+typedef std::list<field_info_ctx,field_info_ctx_allocator> \
     field_info_backtrace_buf;
 
 struct field_info_env {
@@ -395,10 +395,9 @@ struct field_info_env {
 };
 
 class field_info_generator {
-    typedef std::vector< const field_des *,std_allocator<field_info> > \
-        field_des_buf;
-    typedef std::vector< field_info_ctx,std_allocator<field_info> > \
-        field_info_buf;
+    typedef std_allocator<const field_des *,field_info> cp_field_des_allocator;
+    typedef std::vector<const field_des *,cp_field_des_allocator> field_des_buf;
+    typedef std::vector<field_info_ctx,field_info_ctx_allocator> field_info_buf;
 
     field_info_backtrace_buf mBacktraceBuf;
     field_des_buf mDepFieldDesBuf;
