@@ -41,7 +41,7 @@ struct test_tree_callback: test_tree::for_each_callback {
     virtual void afterPopStack(test_stack_item * io_stackTop) {
         std::cout << "  << pop {"
                   << io_stackTop->mTreeNode->GetValue()
-                  << "}:"a
+                  << "}:"
                   << io_stackTop->mNextSubNodeIdx
                   << std::endl;
     }

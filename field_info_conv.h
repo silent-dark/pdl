@@ -406,7 +406,7 @@ private:
             findPair(ist, attr, out_bufVal, sizeVal, bufAttr, sizeAttr)
         );
     }
-    bool findFieldVal(
+    static bool findFieldVal(
         std::istream & ist,
         uint32_t oflags,
         const field_info * fieldInfo,
