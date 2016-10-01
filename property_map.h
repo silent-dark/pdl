@@ -58,6 +58,16 @@ private:
     struct key_val_pair {
         key_type mKeyItem;
         val_type mVal;
+
+        key_val_pair() {}
+        key_val_pair(const key_val_pair & src)
+            : mKeyItem(src.mKeyItem)
+            , mVal(src.mKeyVal)
+        {}
+        key_val_pair & operator =(const key_val_pair & src) {
+            mKeyItem = src.mKeyItem;
+            mVal = src.mVal;
+        }
     };
     typedef tree_traits<void,key_val_pair,3> map_traits;
     typedef tree<map_traits,BUFFER_EXTEND_SIZE> map_tree;
@@ -165,12 +175,20 @@ void property_map<VT,KT,BUFFER_EXTEND_SIZE>::popKeyItem() {
     }
 };
 
+template <typename VT>
+inline bool is_valid(const VT & val) {
+    return static_cast<bool>(val);
+}
+inline bool is_valid(const std::string & str) {
+    return !str.empty();
+}
+
 template <typename VT, typename KT, uint32_t BUFFER_EXTEND_SIZE>
 int property_map<VT,KT,BUFFER_EXTEND_SIZE>::invokeCallback(
     for_each_callback * cb, key_val_pair * kvPair, int order)
 {
     int cbResult = 0;
-    if (kvPair->mVal) {
+    if ( is_valid(kvPair->mVal) ) {
         pushKeyItem(kvPair->mKeyItem);
         cbResult = cb->Callback( &(mKeyBuf[0]), kvPair->mVal, order );
         if (cbResult < 0)

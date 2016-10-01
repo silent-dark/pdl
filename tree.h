@@ -41,6 +41,10 @@ protected:
     val_type mVal;
     sub_node_buf mSubNodes;
 
+    tree_node_base() {
+        memset( mSubNodes, 0, sizeof(sub_node_buf) );
+    }
+
 public:
     uint32_t SetSubNodeCapacity(uint32_t) {
         // do nothing.
