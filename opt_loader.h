@@ -138,6 +138,7 @@ public:
     virtual const char * optKey() const = 0;
     virtual bool isNoneValueOpt() const = 0;
     virtual size_t optSize() const = 0;
+    virtual void * optAddr(void * baseAddr) const = 0;
     virtual const char * defaultVal() const = 0;
 
 protected:
@@ -153,8 +154,6 @@ public:
     const meta_opt_loader & optLoader() const {
         return mOptLoader;
     }
-
-    size_t _optOffset; // runtime value after load or save.
 };
 
 template <typename PT = opt_parser>
@@ -186,13 +185,16 @@ int opt_loader<PT>::load(
     opt_parser_t & optParser, void * out_optBuf, size_t bufSize)
 {
     int err = 0;
-    uint8_t * optAddr = static_cast<uint8_t *>(out_optBuf);
-    uint8_t * optEnd = optAddr + bufSize;
+    void * optAddr;
+    void * optEnd = static_cast<uint8_t *>(out_optBuf) + bufSize;
     meta_opt * metaOpt;
     const char * optVal;
     size_t i, n;
-    for (i = 0, n = mMetaOptSet.size(); i < n && optAddr < optEnd; ++i) {
+    for (i = 0, n = mMetaOptSet.size(); i < n; ++i) {
         metaOpt = mMetaOptSet[i].ObjAt(0);
+        optAddr = metaOpt->optAddr(out_optBuf);
+        if ( static_cast<uint8_t *>(optAddr) + metaOpt->optSize() > optEnd )
+            break;
         optVal = metaOpt->isNoneValueOpt()? \
             optParser.isOptExisted( metaOpt->optKey() ): \
             optParser.getOpt( metaOpt->optKey() );
@@ -201,8 +203,6 @@ int opt_loader<PT>::load(
         );
         if (err < 0)
             break;
-        metaOpt->_optOffset = optAddr - static_cast<uint8_t *>(out_optBuf);
-        optAddr += metaOpt->optSize();
     }
     return err;
 }
@@ -212,21 +212,22 @@ int opt_loader<PT>::save(
     std::ostream & ost, const void * optBuf, size_t bufSize)
 {
     int err = 0;
-    const uint8_t * optAddr = static_cast<const uint8_t *>(optBuf);
-    const uint8_t * optEnd = optAddr + bufSize;
+    void * optAddr;
+    const void * optEnd = static_cast<const uint8_t *>(optBuf) + bufSize;
     meta_opt * metaOpt;
     std::string optVal;
     size_t i, n;
-    for (i = 0, n = mMetaOptSet.size(); i < n && optAddr < optEnd; ++i) {
+    for (i = 0, n = mMetaOptSet.size(); i < n; ++i) {
         metaOpt = mMetaOptSet[i].ObjAt(0);
+        optAddr = metaOpt->optAddr( const_cast<void *>(optBuf) );
+        if ( static_cast<uint8_t *>(optAddr) + metaOpt->optSize() > optEnd )
+            break;
         err = metaOpt->optLoader().save(
             optAddr, metaOpt->optSize(), optVal
         );
         if (err < 0)
             break;
         ost << metaOpt->optKey() << '=' << optVal << std::endl;
-        metaOpt->_optOffset = optAddr - static_cast<const uint8_t *>(optBuf);
-        optAddr += metaOpt->optSize();
     }
     return err;
 }

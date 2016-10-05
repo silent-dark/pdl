@@ -260,9 +260,66 @@ int meta_opt_loader_str::save(
 
 #ifdef OPT_LOADER_UT
 
+struct prog_args {
+    uint16_t _threadCount;
+    std::string _testUsr;
+    std::string _testPswd;
+    std::string _testUtkn;
+    std::string _testMedID;
+    uint32_t _testAuthCode;
+
+    prog_args() {
+        _threadCount = 0;
+        _testAuthCode = 0;
+    }
+};
+prog_args gProgArgs;
+
 struct meta_arg_thread_count: pdl::meta_opt {
     meta_arg_thread_count()
         : pdl::meta_opt(pdl::META_OPT_LOADER_INT)
+    {}
+    virtual const char * optKey() const {
+        return "-t";
+    }
+    virtual bool isNoneValueOpt() const {
+        return false;
+    }
+    virtual size_t optSize() const {
+        return sizeof(uint16_t);
+    }
+    virtual void * optAddr(void * baseAddr) const {
+        return &( static_cast<prog_args *>(baseAddr)->_threadCount );
+    }
+    virtual const char * defaultVal() const {
+        return "1";
+    }
+};
+
+struct meta_arg_test_usr: pdl::meta_opt {
+    meta_arg_test_usr()
+        : pdl::meta_opt(pdl::META_OPT_LOADER_STR)
+    {}
+    virtual const char * optKey() const {
+        return "-u";
+    }
+    virtual bool isNoneValueOpt() const {
+        return false;
+    }
+    virtual size_t optSize() const {
+        return sizeof(std::string);
+    }
+    virtual void * optAddr(void * baseAddr) const {
+        return &( static_cast<prog_args *>(baseAddr)->_testUsr );
+    }
+    virtual const char * defaultVal() const {
+        return "test_http_drm";
+    }
+};
+
+struct meta_arg_test_pswd: pdl::meta_opt {
+    meta_arg_test_pswd()
+        : pdl::meta_opt(pdl::META_OPT_LOADER_STR)
     {}
     virtual const char * optKey() const {
         return "-p";
@@ -271,25 +328,91 @@ struct meta_arg_thread_count: pdl::meta_opt {
         return false;
     }
     virtual size_t optSize() const {
-        return sizeof(uint16_t);
+        return sizeof(std::string);
+    }
+    virtual void * optAddr(void * baseAddr) const {
+        return &( static_cast<prog_args *>(baseAddr)->_testPswd );
     }
     virtual const char * defaultVal() const {
-        return "4";
+        return "123456";
+    }
+};
+
+struct meta_arg_test_utkn: pdl::meta_opt {
+    meta_arg_test_utkn()
+        : pdl::meta_opt(pdl::META_OPT_LOADER_STR)
+    {}
+    virtual const char * optKey() const {
+        return "--user-token";
+    }
+    virtual bool isNoneValueOpt() const {
+        return false;
+    }
+    virtual size_t optSize() const {
+        return sizeof(std::string);
+    }
+    virtual void * optAddr(void * baseAddr) const {
+        return &( static_cast<prog_args *>(baseAddr)->_testUtkn );
+    }
+    virtual const char * defaultVal() const {
+        return "abcdef";
+    }
+};
+
+struct meta_arg_test_med_id: pdl::meta_opt {
+    meta_arg_test_med_id()
+        : pdl::meta_opt(pdl::META_OPT_LOADER_STR)
+    {}
+    virtual const char * optKey() const {
+        return "-m";
+    }
+    virtual bool isNoneValueOpt() const {
+        return false;
+    }
+    virtual size_t optSize() const {
+        return sizeof(std::string);
+    }
+    virtual void * optAddr(void * baseAddr) const {
+        return &( static_cast<prog_args *>(baseAddr)->_testMedID );
+    }
+    virtual const char * defaultVal() const {
+        return "test_video";
+    }
+};
+
+struct meta_arg_test_auth_code: pdl::meta_opt {
+    meta_arg_test_auth_code()
+        : pdl::meta_opt(pdl::META_OPT_LOADER_INT)
+    {}
+    virtual const char * optKey() const {
+        return "-a";
+    }
+    virtual bool isNoneValueOpt() const {
+        return false;
+    }
+    virtual size_t optSize() const {
+        return sizeof(uint32_t);
+    }
+    virtual void * optAddr(void * baseAddr) const {
+        return &( static_cast<prog_args *>(baseAddr)->_testAuthCode );
+    }
+    virtual const char * defaultVal() const {
+        return "654321";
     }
 };
 
 struct prog_args_loader: pdl::opt_loader<> {
     prog_args_loader()
-        : pdl::opt_loader<>(1)
+        : pdl::opt_loader<>(6)
     {
         regMetaOpt(new meta_arg_thread_count);
+        regMetaOpt(new meta_arg_test_usr);
+        regMetaOpt(new meta_arg_test_pswd);
+        regMetaOpt(new meta_arg_test_utkn);
+        regMetaOpt(new meta_arg_test_med_id);
+        regMetaOpt(new meta_arg_test_auth_code);
     }
 };
-
-struct prog_args {
-    uint16_t _threadCount;
-};
-prog_args gProgArgs;
 
 int main(int argc, char ** argv)
 {
